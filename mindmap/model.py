@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -15,6 +15,8 @@ class Node:
     y: float
     parent_id: Optional[int] = None
     children: List[int] = field(default_factory=list)
+    content_type: str = "text"
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class MindMap:
@@ -32,11 +34,25 @@ class MindMap:
         self.root_id = node.id
         return node
 
-    def add_child(self, parent_id: int, label: str = "New Topic") -> Node:
+    def add_child(
+        self,
+        parent_id: int,
+        label: str = "New Topic",
+        *,
+        content_type: str = "text",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Node:
         parent = self._nodes[parent_id]
         x_offset = 160 if len(parent.children) % 2 == 0 else -160
         y_offset = (len(parent.children) // 2 + 1) * 80
-        node = self._create_node(label, parent.x + x_offset, parent.y + y_offset, parent_id)
+        node = self._create_node(
+            label,
+            parent.x + x_offset,
+            parent.y + y_offset,
+            parent_id,
+            content_type=content_type,
+            metadata=metadata or {},
+        )
         parent.children.append(node.id)
         return node
 
@@ -81,6 +97,8 @@ class MindMap:
                     "y": node.y,
                     "parent_id": node.parent_id,
                     "children": node.children,
+                    "content_type": node.content_type,
+                    "metadata": node.metadata,
                 }
                 for node_id, node in self._nodes.items()
             },
@@ -102,14 +120,36 @@ class MindMap:
                 y=node_data["y"],
                 parent_id=node_data.get("parent_id"),
                 children=list(node_data.get("children", [])),
+                content_type=node_data.get("content_type", "text"),
+                metadata=dict(node_data.get("metadata", {})),
             )
 
         instance._nodes = nodes
         return instance
 
-    def _create_node(self, label: str, x: float, y: float, parent_id: Optional[int]) -> Node:
+    def _create_node(
+        self,
+        label: str,
+        x: float,
+        y: float,
+        parent_id: Optional[int],
+        *,
+        content_type: str = "text",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Node:
         node_id = self._next_id
         self._next_id += 1
-        node = Node(id=node_id, label=label, x=x, y=y, parent_id=parent_id)
+        node = Node(
+            id=node_id,
+            label=label,
+            x=x,
+            y=y,
+            parent_id=parent_id,
+            content_type=content_type,
+            metadata=dict(metadata or {}),
+        )
         self._nodes[node_id] = node
         return node
+
+    def update_metadata(self, node_id: int, metadata: Dict[str, Any]) -> None:
+        self._nodes[node_id].metadata = dict(metadata)
