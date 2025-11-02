@@ -1,0 +1,38 @@
+{
+  "id": "root",
+  "title": "我的目标",
+  "children": [
+    {
+      "id": "study",
+      "title": "学习",
+      "children": [
+        {
+          "id": "python",
+          "title": "学 Python",
+          "children": []
+        },
+        {
+          "id": "english",
+          "title": "学英语",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "life",
+      "title": "生活",
+      "children": [
+        {
+          "id": "exercise",
+          "title": "运动",
+          "children": []
+        },
+        {
+          "id": "travel",
+          "title": "旅行计划",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
