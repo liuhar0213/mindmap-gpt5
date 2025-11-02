@@ -27,15 +27,16 @@ class MindMap:
         self._nodes: Dict[int, Node] = {}
         self._next_id = 1
         self.root_id: Optional[int] = None
+        self.background: str = "#f2f3f5"
 
-    def create_root(self, label: str = "Central Idea") -> Node:
+    def create_root(self, label: str = "") -> Node:
         if self.root_id is not None:
             raise ValueError("Root node already exists")
         node = self._create_node(label, 400, 300, None)
         self.root_id = node.id
         return node
 
-    def add_child(self, parent_id: int, label: str = "New Topic") -> Node:
+    def add_child(self, parent_id: int, label: str = "") -> Node:
         parent = self._nodes[parent_id]
         x_offset = 160 if len(parent.children) % 2 == 0 else -160
         y_offset = (len(parent.children) // 2 + 1) * 80
@@ -43,7 +44,7 @@ class MindMap:
         parent.children.append(node.id)
         return node
 
-    def add_sibling(self, node_id: int, label: str = "New Topic") -> Node:
+    def add_sibling(self, node_id: int, label: str = "") -> Node:
         node = self._nodes[node_id]
         if node.parent_id is None:
             raise ValueError("Root node cannot have siblings added automatically")
@@ -93,16 +94,51 @@ class MindMap:
     def update_attachment(self, node_id: int, attachment: Optional[str]) -> None:
         self._nodes[node_id].attachment = attachment
 
+    def set_background(self, color: str) -> None:
+        self.background = color
+
     def get_node(self, node_id: int) -> Node:
         return self._nodes[node_id]
 
     def nodes(self) -> List[Node]:
         return list(self._nodes.values())
 
+    def serialize_subtree(self, node_id: int) -> Dict:
+        node = self._nodes[node_id]
+        return {
+            "label": node.label,
+            "x": node.x,
+            "y": node.y,
+            "color": node.color,
+            "note": node.note,
+            "attachment": node.attachment,
+            "children": [self.serialize_subtree(child_id) for child_id in node.children],
+        }
+
+    def insert_subtree(self, parent_id: int, subtree: Dict, offset_x: float, offset_y: float) -> Node:
+        def create(data: Dict, parent: Optional[int]) -> Node:
+            node = self._create_node(
+                data.get("label", ""),
+                data.get("x", 0.0) + offset_x,
+                data.get("y", 0.0) + offset_y,
+                parent,
+            )
+            node.color = data.get("color", "#ffffff")
+            node.note = data.get("note", "")
+            node.attachment = data.get("attachment")
+            if parent is not None:
+                self._nodes[parent].children.append(node.id)
+            for child in data.get("children", []):
+                create(child, node.id)
+            return node
+
+        return create(subtree, parent_id)
+
     def to_dict(self) -> Dict:
         return {
             "root_id": self.root_id,
             "next_id": self._next_id,
+            "background": self.background,
             "nodes": {
                 node_id: {
                     "label": node.label,
@@ -123,6 +159,7 @@ class MindMap:
         instance = cls()
         instance.root_id = data.get("root_id")
         instance._next_id = data.get("next_id", 1)
+        instance.background = data.get("background", "#f2f3f5")
 
         nodes: Dict[int, Node] = {}
         for node_id_str, node_data in data.get("nodes", {}).items():
